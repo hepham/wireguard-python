@@ -4,6 +4,7 @@ from utils.auth import require_auth
 from utils.exceptions import InvalidRequestError, NotFoundError, InternalServerError
 import tempfile
 import os
+import ipaddress
 
 client_bp = Blueprint('client', __name__)
 service = ClientService()
@@ -19,7 +20,7 @@ def create_client():
     
     if error:
         return jsonify({'message': error}), 400
-        
+    
     config = service.generate_client_config(client)
     return jsonify({
         'name': client['name'],
@@ -31,6 +32,13 @@ def create_client():
 @require_auth()
 def list_clients():
     clients = service.client_model.load_clients()
+    # Tìm IP khả dụng
+    server_network = ipaddress.ip_network(service.config.SERVER_WG_IPV4, strict=False)
+    used_ips = [c['ip'].split('/')[0] for c in clients]
+    # Loại bỏ IP .1 vì đây là IP của server
+    server_ip = str(list(server_network.hosts())[0])  # IP đầu tiên (.1)
+    if server_ip in used_ips:
+        used_ips.remove(server_ip)
     return jsonify([{
         'name': c['name'],
         'ip': c['ip'],

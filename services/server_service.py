@@ -24,9 +24,16 @@ class ServerService:
 
     def _create_initial_config(self, private_key: str):
         config = f"""[Interface]
-Address = {self.subnet}
-ListenPort = {self.port}
+# Private key of the server
 PrivateKey = {private_key}
+# Listening port of the server
+ListenPort = {self.model.port}
+# Address and subnet of the WireGuard interface
+Address = 10.66.66.1/24, fd42:42:42::1/64
+# Post up script
+PostUp = {self.model.post_up_script}
+# Post down script
+PostDown = {self.model.post_down_script}
 """
         with open(self.model.config_path, 'w') as f:
             f.write(config)

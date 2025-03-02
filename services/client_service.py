@@ -21,17 +21,19 @@ class ClientService:
 
             # Generate keys
             private_key = subprocess.check_output(['wg', 'genkey'], text=True).strip()
+            print("private_key:",private_key)
             public_key = subprocess.check_output(
                 ['wg', 'pubkey'], 
                 input=private_key, 
                 text=True
             ).strip()
+            print("public_key:",public_key)
             preshared_key = subprocess.check_output(['wg', 'genpsk'], text=True).strip()
-
+            print("preshared_key:",preshared_key)
             # Assign IP
             used_ips = [c['ip'].split('/')[0] for c in clients]
             ip = self.client_model.get_next_ip(used_ips)
-
+            print("ip:",ip)
             # Add to server config
             self._add_peer_to_config(public_key, preshared_key, ip)
 

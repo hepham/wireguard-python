@@ -13,7 +13,7 @@ service = ClientService()
 def create_client():
     data = request.get_json()
     if not data or 'name' not in data:
-        raise InvalidRequestError('Client name is required')
+        return jsonify({'message': 'Client name is required'}), 400
     
     try:
         client = service.create_client(data['name'])
@@ -24,9 +24,9 @@ def create_client():
             'ip': client['ip']
         }), 201
     except InvalidRequestError as e:
-        raise e
+        return jsonify({'message': str(e)}), 400
     except Exception as e:
-        raise InternalServerError(str(e))
+        return jsonify({'message': f'Internal server error: {str(e)}'}), 500
 
 @client_bp.route('/clients', methods=['GET'])
 @require_auth()

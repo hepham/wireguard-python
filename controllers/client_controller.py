@@ -15,18 +15,17 @@ def create_client():
     if not data or 'name' not in data:
         return jsonify({'message': 'Client name is required'}), 400
     
-    try:
-        client = service.create_client(data['name'])
-        config = service.generate_client_config(client)
-        return jsonify({
-            'name': client['name'],
-            'config': config,
-            'ip': client['ip']
-        }), 201
-    except InvalidRequestError as e:
-        return jsonify({'message': str(e)}), 400
-    except Exception as e:
-        return jsonify({'message': f'Internal server error: {str(e)}'}), 500
+    client, error = service.create_client(data['name'])
+    
+    if error:
+        return jsonify({'message': error}), 400
+        
+    config = service.generate_client_config(client)
+    return jsonify({
+        'name': client['name'],
+        'config': config,
+        'ip': client['ip']
+    }), 201
 
 @client_bp.route('/clients', methods=['GET'])
 @require_auth()

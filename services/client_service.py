@@ -12,28 +12,30 @@ class ClientService:
         self.server_model = ServerModel()
         self.wg_service = WGService()
 
-    def create_client(self, name: str) -> dict:
+    def create_client(self, name: str) -> tuple:
         try:
             clients = self.client_model.load_clients()
             
             if any(c['name'] == name for c in clients):
-                raise InvalidRequestError(f"Client {name} already exists")
+                return None, f"Client {name} already exists"
 
             # Generate keys
             private_key = subprocess.check_output(['wg', 'genkey'], text=True).strip()
-            print("private_key:",private_key)
+            print("private_key:", private_key)
             public_key = subprocess.check_output(
                 ['wg', 'pubkey'], 
                 input=private_key, 
                 text=True
             ).strip()
-            print("public_key:",public_key)
+            print("public_key:", public_key)
             preshared_key = subprocess.check_output(['wg', 'genpsk'], text=True).strip()
-            print("preshared_key:",preshared_key)
+            print("preshared_key:", preshared_key)
+
             # Assign IP
             used_ips = [c['ip'].split('/')[0] for c in clients]
             ip = self.client_model.get_next_ip(used_ips)
-            print("ip:",ip)
+            print("ip:", ip)
+
             # Add to server config
             self._add_peer_to_config(public_key, preshared_key, ip)
 
@@ -49,11 +51,12 @@ class ClientService:
             self.client_model.save_clients(clients)
             
             self.wg_service.apply_config()
-            return client
+            return client, None
+
         except subprocess.CalledProcessError as e:
-            raise InternalServerError(f"Failed to generate WireGuard keys: {str(e)}")
+            return None, f"Failed to generate WireGuard keys: {str(e)}"
         except Exception as e:
-            raise InternalServerError(f"Failed to create client: {str(e)}")
+            return None, f"Failed to create client: {str(e)}"
 
     def _add_peer_to_config(self, public_key: str, psk: str, ip: str):
         peer_config = f"\n[Peer]\nPublicKey = {public_key}\n"
